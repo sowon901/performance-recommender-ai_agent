@@ -1,0 +1,372 @@
+// Performance.java
+package com.agent.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Performance {
+    @Id
+    private String id;
+    private String title;
+    private String genre;
+    private String startDate;
+    private String endDate;
+    private String posterUrl;
+}
+
+// UserHistory.java
+package com.agent.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserHistory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String userId;
+    private String performanceId;
+    private String action;
+    private LocalDateTime timestamp;
+}
+
+// PerformanceRepository.java
+package com.agent.repository;
+
+import com.agent.model.Performance;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PerformanceRepository extends JpaRepository<Performance, String> {}
+
+// UserHistoryRepository.java
+package com.agent.repository;
+
+import com.agent.model.UserHistory;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface UserHistoryRepository extends JpaRepository<UserHistory, Long> {
+    List<UserHistory> findByUserId(String userId);
+}
+
+// PerformanceService.java
+package com.agent.service;
+
+import com.agent.model.Performance;
+import com.agent.repository.PerformanceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class PerformanceService {
+    private final PerformanceRepository performanceRepository;
+
+    public List<Performance> fetchAll() {
+        return performanceRepository.findAll();
+    }
+
+    public void saveAll(List<Performance> performances) {
+        performanceRepository.saveAll(performances);
+    }
+}
+
+// UserHistoryService.java
+package com.agent.service;
+
+import com.agent.model.UserHistory;
+import com.agent.repository.UserHistoryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserHistoryService {
+    private final UserHistoryRepository userHistoryRepository;
+
+    public void record(String userId, String performanceId, String action) {
+        userHistoryRepository.save(new UserHistory(null, userId, performanceId, action, LocalDateTime.now()));
+    }
+
+    public List<UserHistory> getUserHistory(String userId) {
+        return userHistoryRepository.findByUserId(userId);
+    }
+}
+
+// RecommendationService.java
+package com.agent.service;
+
+import com.agent.model.Performance;
+import com.agent.model.UserHistory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class RecommendationService {
+    private final PerformanceService performanceService;
+    private final UserHistoryService userHistoryService;
+    private final GPTClient gptClient;
+
+    public List<Performance> recommend(String userId) {
+        List<Performance> all = performanceService.fetchAll();
+        List<UserHistory> history = userHistoryService.getUserHistory(userId);
+        String prompt = buildPrompt(history, all);
+        List<String> recommendedIds = gptClient.askRecommendation(prompt);
+        return all.stream()
+                .filter(p -> recommendedIds.contains(p.getId()))
+                .collect(Collectors.toList());
+    }
+
+    private String buildPrompt(List<UserHistory> history, List<Performance> upcoming) {
+        // 간단한 프롬프트 생성
+        StringBuilder sb = new StringBuilder("User has watched the following performances:\n");
+        for (UserHistory h : history) sb.append("- ").append(h.getPerformanceId()).append("\n");
+        sb.append("\nUpcoming performances:\n");
+        for (Performance p : upcoming)
+            sb.append(p.getId()).append(", ").append(p.getTitle()).append(", ").append(p.getGenre()).append("\n");
+        sb.append("\nRecommend top 3 by ID only:");
+        return sb.toString();
+    }
+}
+
+// GPTClient.java
+package com.agent.service;
+
+import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
+
+@Service
+public class GPTClient {
+    public List<String> askRecommendation(String prompt) {
+        // 실제 GPT 호출 로직 대신 mock return
+        return Arrays.asList("P123", "P456", "P789");
+    }
+}
+
+// PerformanceController.java
+package com.agent.controller;
+
+import com.agent.model.Performance;
+import com.agent.service.RecommendationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.utiㅇ/ 프로젝트: 공연 추천 도우미 Agent
+// 스택: Java Spring Boot + JPA + Vue3 + GPT-4o-mini
+
+// Performance.java
+package com.agent.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Performance {
+    @Id
+    private String id;
+    private String title;
+    private String genre;
+    private String startDate;
+    private String endDate;
+    private String posterUrl;
+}
+
+// UserHistory.java
+package com.agent.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserHistory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String userId;
+    private String performanceId;
+    private String action;
+    private LocalDateTime timestamp;
+}
+
+// PerformanceRepository.java
+package com.agent.repository;
+
+import com.agent.model.Performance;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PerformanceRepository extends JpaRepository<Performance, String> {}
+
+// UserHistoryRepository.java
+package com.agent.repository;
+
+import com.agent.model.UserHistory;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface UserHistoryRepository extends JpaRepository<UserHistory, Long> {
+    List<UserHistory> findByUserId(String userId);
+}
+
+// PerformanceService.java
+package com.agent.service;
+
+import com.agent.model.Performance;
+import com.agent.repository.PerformanceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class PerformanceService {
+    private final PerformanceRepository performanceRepository;
+
+    public List<Performance> fetchAll() {
+        return performanceRepository.findAll();
+    }
+
+    public void saveAll(List<Performance> performances) {
+        performanceRepository.saveAll(performances);
+    }
+}
+
+// UserHistoryService.java
+package com.agent.service;
+
+import com.agent.model.UserHistory;
+import com.agent.repository.UserHistoryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserHistoryService {
+    private final UserHistoryRepository userHistoryRepository;
+
+    public void record(String userId, String performanceId, String action) {
+        userHistoryRepository.save(new UserHistory(null, userId, performanceId, action, LocalDateTime.now()));
+    }
+
+    public List<UserHistory> getUserHistory(String userId) {
+        return userHistoryRepository.findByUserId(userId);
+    }
+}
+
+// RecommendationService.java
+package com.agent.service;
+
+import com.agent.model.Performance;
+import com.agent.model.UserHistory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class RecommendationService {
+    private final PerformanceService performanceService;
+    private final UserHistoryService userHistoryService;
+    private final GPTClient gptClient;
+
+    public List<Performance> recommend(String userId) {
+        List<Performance> all = performanceService.fetchAll();
+        List<UserHistory> history = userHistoryService.getUserHistory(userId);
+        String prompt = buildPrompt(history, all);
+        List<String> recommendedIds = gptClient.askRecommendation(prompt);
+        return all.stream()
+                .filter(p -> recommendedIds.contains(p.getId()))
+                .collect(Collectors.toList());
+    }
+
+    private String buildPrompt(List<UserHistory> history, List<Performance> upcoming) {
+        // 간단한 프롬프트 생성
+        StringBuilder sb = new StringBuilder("User has watched the following performances:\n");
+        for (UserHistory h : history) sb.append("- ").append(h.getPerformanceId()).append("\n");
+        sb.append("\nUpcoming performances:\n");
+        for (Performance p : upcoming)
+            sb.append(p.getId()).append(", ").append(p.getTitle()).append(", ").append(p.getGenre()).append("\n");
+        sb.append("\nRecommend top 3 by ID only:");
+        return sb.toString();
+    }
+}
+
+// GPTClient.java
+package com.agent.service;
+
+import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
+
+@Service
+public class GPTClient {
+    public List<String> askRecommendation(String prompt) {
+        // 실제 GPT 호출 로직 대신 mock return
+        return Arrays.asList("P123", "P456", "P789");
+    }
+}
+
+// PerformanceController.java
+package com.agent.controller;
+
+import com.agent.model.Performance;
+import com.agent.service.RecommendationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.utiㅇl.List;
+
+@RestController
+@RequestMapping("/api/performance")
+@RequiredArgsConstructor
+public class PerformanceController {
+    private final RecommendationService recommendationService;
+
+    @GetMapping("/recommend")
+    public List<Performance> recommend(@RequestParam String userId) {
+        return recommendationService.recommend(userId);
+    }
+} 
