@@ -1,4 +1,4 @@
-package com.agent.model;
+package com.agent.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,4 +18,3 @@ public class UserHistory {
     private String action;
     private LocalDateTime timestamp;
 }
-

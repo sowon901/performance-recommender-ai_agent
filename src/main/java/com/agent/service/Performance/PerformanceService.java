@@ -1,6 +1,6 @@
-package com.agent.service;
+package com.agent.service.Performance;
 
-import com.agent.model.Performance;
+import com.agent.entity.Performance;
 import com.agent.repository.PerformanceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
